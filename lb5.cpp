@@ -37,7 +37,7 @@ void thread_1()
 void thread_2()
 {
 	HANDLE hMutex;
-	if ((hMutex = OpenMutex(SYNCHRONIZE, FALSE, L"Mutex")) == NULL) 
+	if ((hMutex = OpenMutex(SYNCHRONIZE, FALSE, L"Mutex")) == NULL)
 	{
 		int error = GetLastError();
 		cerr << "There is an error while mutex opening (thread_2): " << error << endl;
@@ -61,6 +61,27 @@ void thread_2()
 	ReleaseMutex(hMutex);
 }
 
+void thread_3()
+{
+	int zero_count = 0;
+	HANDLE hMutex;
+	if ((hMutex = OpenMutex(SYNCHRONIZE, FALSE, L"Mutex")) == NULL)
+	{
+		int error = GetLastError();
+		cerr << "There is an error while mutex opening (thread_2): " << error << endl;
+		return;
+	}
+	WaitForSingleObject(hMutex, INFINITE);
+
+	for (int i = 0; i < cSize; i++)
+	{
+		if (arr[i] == 0)
+			zero_count += 1;
+	}
+	cout << "zero count = " << zero_count << endl;
+	ReleaseMutex(hMutex);
+}
+
 int main()
 {
 	HANDLE hMutex;
@@ -71,8 +92,8 @@ int main()
 		return error;
 	}
 
-	HANDLE  hThread[2];
-	DWORD   IDThread_1, IDThread_2;
+	HANDLE  hThread[3];
+	DWORD   IDThread_1, IDThread_2, IDThread_3;
 
 	if ((hThread[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread_1, NULL, 0, &IDThread_1)) == NULL)
 	{
@@ -91,11 +112,22 @@ int main()
 		CloseHandle(hMutex);
 		return error;
 	}
+	if ((hThread[2] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)thread_3, NULL, 0, &IDThread_3)) == NULL)
+	{
+		int error = GetLastError();
+		cerr << "There is an error while thread_2 creating: " << error << endl;
+		cin.get();
+		CloseHandle(hThread[0]);
+		CloseHandle(hThread[1]);
+		CloseHandle(hMutex);
+		return error;
+	}
 
-	WaitForMultipleObjects(2, hThread, TRUE, INFINITE);
+	WaitForMultipleObjects(3, hThread, TRUE, INFINITE);
 
 	CloseHandle(hThread[0]);
 	CloseHandle(hThread[1]);
+	CloseHandle(hThread[2]);
 	CloseHandle(hMutex);
 	return 0;
 }
